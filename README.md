@@ -2,8 +2,10 @@
 
 ## Overview
 
-This project builds a data lakehouse using AWS Glue, S3, and Athena.
-The goal is to process IoT and customer data across Landing, Trusted, and Curated zones.
+This project implements a data lakehouse architecture on AWS using S3, Glue, and Athena.
+It processes IoT sensor data and customer data across three layers: Landing, Trusted, and Curated.
+
+The pipeline enforces data privacy rules, removes invalid records, and prepares datasets for machine learning.
 
 ---
 
@@ -28,19 +30,29 @@ Landing → Trusted → Curated → Machine Learning
 
 Raw JSON data ingested into S3:
 
-* customer_landing
-* accelerometer_landing
-* step_trainer_landing
+* `customer_landing`
+* `accelerometer_landing`
+* `step_trainer_landing`
 
 ---
 
 ### Trusted Zone
 
-Data cleaned and filtered:
+Data is cleaned and filtered:
 
-* customer_trusted (consent applied)
-* accelerometer_trusted (filtered by valid users)
-* step_trainer_trusted (joined with valid customers)
+* `customer_trusted`
+
+  * Filters users with valid research consent (`sharewithresearchasofdate IS NOT NULL`)
+
+* `accelerometer_trusted`
+
+  * Inner join with `customer_trusted` using email
+  * Keeps only valid users' sensor data
+
+* `step_trainer_trusted`
+
+  * Filters records using valid `serialnumber` from curated customers
+  * Prevents data explosion and duplication
 
 ---
 
@@ -48,12 +60,18 @@ Data cleaned and filtered:
 
 Business-ready datasets:
 
-* customer_curated (deduplicated customers)
-* machine_learning_curated (joined sensor datasets)
+* `customer_curated`
+
+  * Deduplicated by email
+
+* `machine_learning_curated`
+
+  * Joins `step_trainer_trusted` with `accelerometer_trusted`
+  * Combines motion sensor data for ML use cases
 
 ---
 
-## Validation Results
+## Validation Results (Athena)
 
 | Table                    | Rows  |
 | ------------------------ | ----- |
@@ -68,12 +86,34 @@ Business-ready datasets:
 
 ---
 
+## Key Decisions
+
+* Used **SQL Query nodes** in Glue for more predictable joins
+* Used **Data Catalog sources** instead of raw S3 when necessary
+* Applied **deduplication early** to avoid data explosion
+* Recreated tables and S3 data when debugging to avoid append issues
+
+---
+
+## Project Structure
+
+```bash
+stedi-lakehouse/
+│
+├── glue_jobs/
+├── sql/
+├── screenshots/
+└── README.md
+```
+
+---
+
 ## Key Learnings
 
-* Handling schema issues in AWS Glue
-* Avoiding data duplication (S3 append behavior)
-* Debugging joins and cardinality problems
-* Using SQL vs Glue visual nodes effectively
+* Handling schema inconsistencies in AWS Glue
+* Avoiding duplicated data due to S3 append behavior
+* Debugging join cardinality issues
+* Choosing between Glue visual nodes and SQL transforms
 
 ---
 
