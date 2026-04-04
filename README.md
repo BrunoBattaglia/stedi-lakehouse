@@ -71,6 +71,18 @@ Business-ready datasets:
 
 ---
 
+## Glue Jobs
+
+Each ETL step was implemented using AWS Glue Studio:
+
+* Landing → Trusted
+* Trusted → Curated
+* Curated → Machine Learning
+
+Screenshots of each job are available in the `/screenshots` folder.
+
+---
+
 ## Validation Results (Athena)
 
 | Table                    | Rows  |
